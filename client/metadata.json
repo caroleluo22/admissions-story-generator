@@ -1,0 +1,5 @@
+{
+  "name": "Visionary Tutor",
+  "description": "Generate cinematic video visuals and comprehensive scripts for your tutorials using Google's Veo and Gemini models.",
+  "requestFramePermissions": []
+}

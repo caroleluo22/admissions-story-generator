@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const story_controller_1 = require("../controllers/story.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authenticateToken);
+router.post('/generate', story_controller_1.generate);
+router.get('/', story_controller_1.listStories);
+router.get('/:id', story_controller_1.getStory);
+router.delete('/:id', story_controller_1.deleteStory);
+router.post('/:id/regenerate', story_controller_1.regenerate);
+router.post('/:id/duplicate', story_controller_1.duplicateStory);
+router.post('/:id/article', story_controller_1.generateArticle);
+router.post('/:id/storyboard', story_controller_1.generateStoryboard);
+exports.default = router;
