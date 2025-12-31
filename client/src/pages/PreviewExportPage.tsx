@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getStory } from '../services/gemini';
+import { getStory, mapBackendScenes } from '../services/gemini';
 import { exportStoryToVideo } from '../services/videoExporter';
 import { Scene } from '../types';
 
@@ -26,7 +26,7 @@ export const PreviewExportPage: React.FC = () => {
     const startTimeRef = useRef<number>(0);
     const lastHandledIndex = useRef<number>(-1);
 
-    const validScenes = useMemo(() => scenes.filter(s => s.videoUri || s.imageUri), [scenes]);
+    const validScenes = useMemo(() => (Array.isArray(scenes) ? scenes : []).filter(s => s.videoUri || s.imageUri), [scenes]);
     const currentScene = validScenes[currentIndex];
     const isVideo = !!currentScene?.videoUri;
     const hasAudio = !!currentScene?.audioUri;
@@ -40,9 +40,11 @@ export const PreviewExportPage: React.FC = () => {
         }
         const load = async () => {
             try {
-                const loadedScenes = await getStory(id);
-                setScenes(loadedScenes);
-                // If no scenes have media, warn user?
+                const loadedStory = await getStory(id);
+                setScenes(mapBackendScenes(loadedStory));
+                if (!loadedStory.outputs?.storyboard?.scenes?.length) {
+                    console.log("No scenes found in story outputs");
+                }
             } catch (e) {
                 setError('Failed to load story');
             } finally {

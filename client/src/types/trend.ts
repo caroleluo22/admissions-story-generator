@@ -56,3 +56,18 @@ export enum TrendAppStatus {
     SUCCESS = 'SUCCESS',
     ERROR = 'ERROR',
 }
+
+export interface TrendHistoryItem {
+    _id: string;
+    businessName: string;
+    platform: Platform;
+    createdAt: string;
+}
+
+export interface StorySuggestion {
+    angle: string;
+    title: string;
+    hook: string;
+    summary: string;
+    prompt: string;
+}

@@ -59,6 +59,24 @@ export const Header: React.FC<HeaderProps> = ({ appMode, setAppMode, setAppStatu
                             )}
 
                             <div className="w-px h-6 bg-white/10 mx-2 hidden md:block" />
+
+                            {(!isStudio || !setAppMode) && (
+                                <>
+                                    <button
+                                        onClick={() => navigate('/studio/new', { state: { appMode: AppMode.TUTORIAL } })}
+                                        className="text-slate-400 hover:text-white text-sm font-bold"
+                                    >
+                                        Video Studio
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/studio/new', { state: { appMode: AppMode.STORY_STUDIO } })}
+                                        className="text-slate-400 hover:text-white text-sm font-bold"
+                                    >
+                                        Story Studio
+                                    </button>
+                                </>
+                            )}
+
                             <button onClick={() => navigate('/trend-studio')} className="text-slate-400 hover:text-white text-sm font-bold">Trend Studio</button>
                             <button onClick={() => navigate('/writing')} className="text-slate-400 hover:text-white text-sm font-bold">Writing Studio</button>
                             <button onClick={() => navigate('/library')} className="text-slate-400 hover:text-white text-sm font-bold">Library</button>

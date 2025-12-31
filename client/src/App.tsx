@@ -271,7 +271,18 @@ const VisionaryStudio = () => {
         )}
 
         {appMode === AppMode.STORY_STUDIO ? (
-          <StoryStudio onSendToProduction={handleSendStudioToProduction} initialStory={activeStory} />
+          <StoryStudio
+            onSendToProduction={handleSendStudioToProduction}
+            initialStory={activeStory}
+            prefilledInputs={
+              // Extract prefilled data from location state if available
+              location.state && (location.state as any).prefilledTopic ? {
+                topic: (location.state as any).prefilledTopic,
+                audience: (location.state as any).prefilledAudience,
+                platform: (location.state as any).prefilledPlatform
+              } : undefined
+            }
+          />
         ) : (
           <>
             {appStatus === AppStatus.INPUT && (

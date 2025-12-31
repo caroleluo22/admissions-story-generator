@@ -1,5 +1,5 @@
 import api from './api';
-import { AnalysisReport, SocialPost, LeadProfile, Platform } from '../types/trend';
+import { AnalysisReport, SocialPost, LeadProfile, Platform, TrendHistoryItem, StorySuggestion } from '../types/trend';
 
 export const analyzeBusinessTrends = async (businessName: string, platform: Platform): Promise<AnalysisReport> => {
     const response = await api.post('/trends/analyze', { businessName, platform });
@@ -13,5 +13,20 @@ export const getTopicDeepDive = async (businessName: string, platform: Platform,
 
 export const generatePostLeads = async (businessName: string, platform: Platform, content: string, url?: string): Promise<LeadProfile[]> => {
     const response = await api.post('/trends/leads', { businessName, platform, content, url });
+    return response.data;
+};
+
+export const getTrendHistory = async (): Promise<TrendHistoryItem[]> => {
+    const response = await api.get('/trends/history');
+    return response.data;
+};
+
+export const getTrendHistoryItem = async (id: string): Promise<AnalysisReport> => {
+    const response = await api.get(`/trends/history/${id}`);
+    return response.data;
+};
+
+export const getStorySuggestions = async (businessName: string, platform: Platform, topic: string, persona: string): Promise<StorySuggestion[]> => {
+    const response = await api.post('/trends/suggestions', { businessName, platform, topic, persona });
     return response.data;
 };

@@ -318,3 +318,94 @@ export const generatePostLeads = async (businessName: string, platform: Platform
         ];
     }
 }
+
+export const generateStorySuggestions = async (businessName: string, platform: Platform, topic: string, persona: string): Promise<any[]> => {
+    if (!ai) throw new Error("API Key Missing");
+    const model = "gemini-2.0-flash-exp";
+
+    const prompt = `
+    You are a creative content strategist for "${businessName}".
+    
+    The user wants to write a story/script about the topic "${topic}" for the audience persona "${persona}" on ${platform}.
+    
+    Generate 5 DISTINCT, creativity, and actionable story concepts/angles for this topic.
+    
+    1. Angle 1: Educational/Value-driven (How-to, tips, insights)
+    2. Angle 2: Emotional/Relatable (Storytelling, behind-the-scenes, vulnerability)
+    3. Angle 3: Contrarian/Engagement-bait (Myth-busting, surprising fact, "stop doing this")
+    4. Angle 4: Future/Visionary (Predictions, trends, "what's next")
+    5. Angle 5: Case Study/Real World (Examples, application, results)
+    
+    For each angle, provide:
+    - title: A catchy internal working title.
+    - hook: The first line/visual hook.
+    - summary: A 1-sentence summary of the story arc.
+    - prompt: The specific prompt text the user should send to the AI to generate this full script.
+    
+    Return JSON array.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            angle: { type: Type.STRING },
+                            title: { type: Type.STRING },
+                            hook: { type: Type.STRING },
+                            summary: { type: Type.STRING },
+                            prompt: { type: Type.STRING }
+                        }
+                    }
+                }
+            }
+        });
+
+        return JSON.parse(response.text || "[]");
+    } catch (e) {
+        // Fallback
+        return [
+            {
+                angle: "Educational",
+                title: `The Ultimate Guide to ${topic}`,
+                hook: `Here is everything you need to know about ${topic}...`,
+                summary: "A value-packed explanation breaking down the key concepts.",
+                prompt: `Write an educational script about ${topic} for ${persona}.`
+            },
+            {
+                angle: "Emotional",
+                title: `Why ${topic} Matters`,
+                hook: `I learned the hard way that ${topic} is...`,
+                summary: "A personal story connecting the trend to real struggles.",
+                prompt: `Write an emotional script about ${topic} for ${persona} focusing on resilience.`
+            },
+            {
+                angle: "Contrarian",
+                title: `Stop Doing This With ${topic}`,
+                hook: `Unpopular opinion: most people get ${topic} wrong.`,
+                summary: "Exposing a common misconception about the trend.",
+                prompt: `Write a contrarian script about ${topic} for ${persona} busting common myths.`
+            },
+            {
+                angle: "Visionary",
+                title: `The Future of ${topic}`,
+                hook: `In 5 years, ${topic} will look completely different.`,
+                summary: "A forward-looking prediction about where this is heading.",
+                prompt: `Write a visionary script about the future of ${topic} for ${persona}.`
+            },
+            {
+                angle: "Case Study",
+                title: `${topic} in Action`,
+                hook: `See how this one change in ${topic} led to results.`,
+                summary: "A concrete example of success using this trend.",
+                prompt: `Write a case study script regarding ${topic} for ${persona}.`
+            }
+        ];
+    }
+}

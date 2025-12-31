@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { TutorialRequest } from '../types';
-// import { analyzeVideoContent } from '../services/gemini'; 
+import { analyzeVideoContent } from '../services/gemini';
 
 interface InputFormProps {
   onSubmit: (data: TutorialRequest) => void;
@@ -24,9 +24,6 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, disabled }) => {
   const handleAnalyzeVideo = async () => {
     if (!videoUrl.trim()) return;
 
-    alert("Video analysis feature is being migrated to the backend and will be available soon.");
-    setIsAnalyzing(false);
-    /* 
     setIsAnalyzing(true);
     try {
       const result = await analyzeVideoContent(videoUrl);
@@ -34,16 +31,22 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, disabled }) => {
         setDescription(result);
         if (!topic) {
           // Attempt to extract a simple topic if description is long
-          const simpleTopic = result.split('\n')[0].substring(0, 50);
-          setTopic(simpleTopic.replace(/[\*\#]/g, '').trim());
+          // Look for "Topic: " prefix explicitly if LLM put it there
+          const topicMatch = result.match(/Topic:\s*(.*)/i);
+          if (topicMatch) {
+            setTopic(topicMatch[1].trim());
+          } else {
+            const simpleTopic = result.split('\n')[0].substring(0, 50);
+            setTopic(simpleTopic.replace(/[\*\#]/g, '').trim());
+          }
         }
       }
     } catch (e) {
       console.error("Failed to analyze video", e);
+      alert("Failed to analyze video. Please check the URL.");
     } finally {
       setIsAnalyzing(false);
     }
-    */
   };
 
   return (

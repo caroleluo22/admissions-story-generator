@@ -6,19 +6,24 @@ import { createFullStory, updateScript } from '../services/gemini';
 interface StoryStudioProps {
   onSendToProduction: (storyId: string) => void;
   initialStory?: StoryProject | null;
+  prefilledInputs?: {
+    topic?: string;
+    audience?: string;
+    platform?: string;
+  };
 }
 
-export const StoryStudio: React.FC<StoryStudioProps> = ({ onSendToProduction, initialStory }) => {
+export const StoryStudio: React.FC<StoryStudioProps> = ({ onSendToProduction, initialStory, prefilledInputs }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const [input, setInput] = useState<StoryStudioInput>({
-    audience: initialStory?.inputs?.audience as any || 'Student',
-    platform: initialStory?.inputs?.platform as any || 'YouTube Long',
+    audience: (initialStory?.inputs?.audience as any) || (prefilledInputs?.audience as any) || 'Student',
+    platform: (initialStory?.inputs?.platform as any) || (prefilledInputs?.platform === 'youtube' ? 'YouTube Long' : 'YouTube Long'),
     length: initialStory?.inputs?.length as any || '60s',
     storyType: initialStory?.inputs?.storyType as any || 'Myth-busting',
     tone: initialStory?.inputs?.tone as any || 'Friendly',
-    topic: initialStory?.inputs?.topic || '',
+    topic: initialStory?.inputs?.topic || prefilledInputs?.topic || '',
     ctaStyle: initialStory?.inputs?.ctaStyle as any || 'Soft'
   });
 
@@ -47,14 +52,17 @@ export const StoryStudio: React.FC<StoryStudioProps> = ({ onSendToProduction, in
 
   useEffect(() => {
     if (location.state && (location.state as any).prefilledTopic) {
+      console.log("StoryStudio received state:", location.state);
       const state = location.state as any;
       setInput(prev => ({
         ...prev,
         topic: state.prefilledTopic,
         // Optional: Map other fields if passed
-        audience: state.prefilledAudience || prev.audience,
+        audience: (state.prefilledAudience as any) || prev.audience,
         platform: state.prefilledPlatform === 'youtube' ? 'YouTube Long' : prev.platform
       }));
+    } else {
+      console.log("StoryStudio: No prefilled topic found in state", location.state);
     }
   }, [location.state]);
 
@@ -325,15 +333,10 @@ ${content.descriptionTemplate}
                         className="text-indigo-400 text-xs font-bold uppercase tracking-widest bg-transparent border-none focus:ring-0 p-0 w-full placeholder-indigo-400/50"
                         placeholder="SECTION HEADING"
                       />
-                      <textarea
+                      <AutoResizeTextarea
                         value={seg.content}
-                        onChange={(e) => handleUpdateScript(i, 'content', e.target.value)}
+                        onChange={(val: string) => handleUpdateScript(i, 'content', val)}
                         className="w-full bg-transparent text-slate-300 text-sm leading-relaxed whitespace-pre-wrap border-none focus:ring-0 p-0 resize-none overflow-hidden min-h-[60px]"
-                        onInput={(e) => {
-                          const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = `${target.scrollHeight}px`;
-                        }}
                       />
                     </div>
                   ))}
@@ -435,3 +438,32 @@ const SectionCard: React.FC<SectionCardProps> = ({ title, children, onRegenerate
     </div>
   </div>
 );
+
+interface AutoResizeTextareaProps {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  placeholder?: string;
+}
+
+const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({ value, onChange, className, placeholder }) => {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  React.useLayoutEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={className}
+      placeholder={placeholder}
+      rows={1}
+    />
+  );
+};

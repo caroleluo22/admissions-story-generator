@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { generateArticle, getStory, listStories } from '../services/gemini';
-import { ArrowLeft, FileText, Loader2, Copy, Check, PenTool, ChevronDown } from 'lucide-react';
+import { generateArticle, getStory, listStories, updateArticle } from '../services/gemini';
+import { ArrowLeft, FileText, Loader2, Copy, Check, PenTool, ChevronDown, Save } from 'lucide-react';
 import type { StoryProject } from '../types';
 import { Header } from '../components/Header';
 import ReactMarkdown from 'react-markdown';
@@ -38,6 +38,50 @@ const WritingStudio: React.FC = () => {
         loadStories();
     }, []);
 
+    // Load existing article when storyId changes
+    useEffect(() => {
+        const loadArticle = async () => {
+            if (!storyId) {
+                setArticle('');
+                setStatus('idle');
+                return;
+            }
+
+            try {
+                // If we already have the story object in the list, check that first to save a call
+                // But normally we want the fresh data, so let's call getStory
+                // Or checking the list might be faster for immediate UI feedback? 
+                // Let's just fetch fresh to be safe.
+                setStatus('loading');
+                const story = await getStory(storyId);
+
+                if (story.outputs && story.outputs.article) {
+                    const art = story.outputs.article as any;
+                    if (typeof art === 'object' && art.content) {
+                        setArticle(art.content);
+                    } else if (typeof art === 'string') {
+                        setArticle(art);
+                    } else {
+                        // Fallback/Unknown format
+                        setArticle(JSON.stringify(art, null, 2));
+                    }
+                    setStatus('success');
+                } else {
+                    setArticle('');
+                    setStatus('idle');
+                }
+            } catch (e) {
+                console.error("Failed to load story details", e);
+                // Don't set error status here, maybe just idle so they can try generating?
+                setStatus('idle');
+            }
+        };
+
+        if (stories.length > 0 || location.state) { // Only trigger if we have context or initial load
+            loadArticle();
+        }
+    }, [storyId]);
+
     const handleGenerate = async () => {
         if (!storyId) return;
         setIsGenerating(true);
@@ -51,6 +95,24 @@ const WritingStudio: React.FC = () => {
             setStatus('error');
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+
+    const handleSave = async () => {
+        if (!storyId || !article) return;
+        setIsSaving(true);
+        try {
+            await updateArticle(storyId, article);
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+        } catch (e) {
+            console.error("Failed to save article", e);
+            alert("Failed to save changes.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -143,23 +205,35 @@ const WritingStudio: React.FC = () => {
                         <div className="bg-slate-900 border border-slate-800 rounded-2xl min-h-[600px] flex flex-col overflow-hidden">
                             <div className="border-b border-slate-800 bg-slate-950/50 px-4 py-3 flex items-center justify-between">
                                 <span className="text-sm font-medium text-slate-400">Content Editor</span>
-                                <div className="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-                                    <button
-                                        onClick={() => setEditMode(false)}
-                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${!editMode ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
-                                    >
-                                        Preview
-                                    </button>
-                                    <button
-                                        onClick={() => setEditMode(true)}
-                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${editMode ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
-                                    >
-                                        Edit
-                                    </button>
+                                <div className="flex items-center gap-3">
+                                    {editMode && (
+                                        <button
+                                            onClick={handleSave}
+                                            disabled={isSaving || saveStatus === 'saved'}
+                                            className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-bold transition-all ${saveStatus === 'saved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}
+                                        >
+                                            {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : saveStatus === 'saved' ? <Check className="w-3 h-3" /> : <Save className="w-3 h-3" />}
+                                            {isSaving ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save'}
+                                        </button>
+                                    )}
+                                    <div className="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                                        <button
+                                            onClick={() => setEditMode(false)}
+                                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${!editMode ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                                        >
+                                            Preview
+                                        </button>
+                                        <button
+                                            onClick={() => setEditMode(true)}
+                                            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${editMode ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex-1 p-6 overflow-auto">
+                            <div className="flex-1 p-6 overflow-auto flex flex-col">
                                 {status === 'idle' && (
                                     <div className="h-full flex flex-col items-center justify-center text-slate-600">
                                         <FileText className="w-16 h-16 mb-4 opacity-20" />
@@ -177,7 +251,7 @@ const WritingStudio: React.FC = () => {
                                         <textarea
                                             value={article}
                                             onChange={(e) => setArticle(e.target.value)}
-                                            className="w-full h-full bg-transparent border-none focus:ring-0 text-slate-300 font-mono text-sm resize-none leading-relaxed"
+                                            className="w-full flex-1 bg-transparent border-none focus:ring-0 text-slate-300 font-mono text-sm resize-none leading-relaxed"
                                         />
                                     ) : (
                                         <div className="prose prose-invert prose-slate max-w-none">

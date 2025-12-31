@@ -3,7 +3,7 @@ import BrandGuidelines from '../models/BrandGuidelines';
 import Workspace from '../models/Workspace';
 import StoryProject from '../models/StoryProject';
 import { buildStoryPrompt, buildRegeneratePrompt, buildArticlePrompt, buildStoryboardPrompt } from '../services/promptBuilder.service';
-import { generateStory, regenerateSection as callLLMForSection, generateImage, generateAudio, generateVideo } from '../services/llm.service';
+import { generateStory, regenerateSection as callLLMForSection, generateImage, generateAudio, generateVideo, analyzeVideoUrl } from '../services/llm.service';
 import { SceneStatus } from '../../../shared/types/story';
 import https from 'https';
 
@@ -545,5 +545,47 @@ export const updateScript = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Update script error:', error);
         res.status(500).json({ message: 'Error updating script' });
+    }
+};
+
+export const analyzeVideo = async (req: Request, res: Response) => {
+    try {
+        const { url } = req.body;
+        if (!url) return res.status(400).json({ message: "URL is required" });
+
+        const analysis = await analyzeVideoUrl(url);
+        res.json({ analysis });
+    } catch (error) {
+        console.error("Video analysis error:", error);
+        res.status(500).json({ message: "Failed to analyze video" });
+    }
+};
+
+export const updateArticle = async (req: Request, res: Response) => {
+    try {
+        // @ts-ignore
+        const userId = req.user.userId;
+        const workspaceId = await getWorkspaceId(userId);
+        const { id } = req.params;
+        const { article } = req.body;
+
+        if (typeof article !== 'string') {
+            return res.status(400).json({ message: 'Invalid article content' });
+        }
+
+        const story = await StoryProject.findOneAndUpdate(
+            { _id: id, workspaceId },
+            { $set: { 'outputs.article': article } },
+            { new: true }
+        );
+
+        if (!story) {
+            return res.status(404).json({ message: 'Story not found' });
+        }
+
+        res.json(story);
+    } catch (error) {
+        console.error('Update article error:', error);
+        res.status(500).json({ message: 'Error updating article' });
     }
 };

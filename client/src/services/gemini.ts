@@ -116,6 +116,16 @@ export const isQuotaError = (error: any): boolean => {
   return error.response?.status === 429;
 };
 
+export const analyzeVideoContent = async (url: string): Promise<string> => {
+  const res = await api.post('/stories/analyze-video', { url });
+  return res.data.analysis;
+};
+
+export const updateArticle = async (storyId: string, article: string): Promise<StoryProject> => {
+  const res = await api.put(`/stories/${storyId}/article`, { article });
+  return res.data;
+};
+
 export const generateVisualPromptsForScript = async (_script: any): Promise<Scene[]> => {
   // This was for "Story Studio" mode. 
   // We should probably implement a backend endpoint for this or reuse generateStory with specific inputs.

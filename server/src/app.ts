@@ -21,6 +21,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/brand', brandRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/trends', trendRoutes);
+import proxyRoutes from './routes/proxy.routes';
+app.use('/api/proxy', proxyRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'Admissions Story Generator API' });

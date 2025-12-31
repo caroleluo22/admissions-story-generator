@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { StoryProject } from '../types';
+import { FileText } from 'lucide-react';
 
 export const LibraryPage = () => {
+    const navigate = useNavigate();
     const [stories, setStories] = useState<StoryProject[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -131,6 +133,15 @@ export const LibraryPage = () => {
                                         </Link>
                                     </div>
                                     <div className="flex space-x-4 items-center">
+                                        {story.outputs?.article && (
+                                            <button
+                                                onClick={() => navigate('/writing', { state: { storyId: story._id } })}
+                                                className="flex items-center gap-1 text-slate-500 hover:text-indigo-400 text-sm font-medium transition"
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                                Article
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => handleDuplicate(story._id!)}
                                             className="text-slate-500 hover:text-indigo-400 text-sm font-medium transition"
