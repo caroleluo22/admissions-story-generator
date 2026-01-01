@@ -29,10 +29,11 @@ export const createStory = async (input: TutorialRequest): Promise<StoryProject>
     audience: input.audience || 'General',
     platform: 'YouTube',
     length: '3-5min',
-    storyType: 'Educational',
+    storyType: input.storyType || 'Educational',
     tone: 'Informative',
     ctaStyle: 'Soft',
-    sourceMaterial: input.description
+    sourceMaterial: input.description,
+    // strictMode removed in favor of storyType
   };
   const res = await api.post('/stories/generate', { inputs: payload });
   return res.data;

@@ -3,6 +3,7 @@ export interface TutorialRequest {
   topic: string;
   description: string;
   audience: string;
+  storyType?: string;
 }
 
 export const SceneStatus = {
@@ -50,11 +51,12 @@ export interface StoryStudioInput {
   audience: 'Student' | 'Parent';
   platform: 'YouTube Long' | 'Shorts';
   length: '30s' | '60s' | '3-5min';
-  storyType: 'Policy confusion' | 'Myth-busting' | 'Deadline horror story' | 'Essay mistake' | 'Parent reassurance' | 'Product demo';
+  storyType: 'Policy confusion' | 'Myth-busting' | 'Deadline horror story' | 'Essay mistake' | 'Parent reassurance' | 'Product demo' | 'Strict Content' | 'Educational';
   tone: 'Calm' | 'Urgent' | 'Authoritative' | 'Friendly';
   topic: string;
   sourceText?: string;
   ctaStyle: 'Soft' | 'Direct' | 'None';
+  strictMode?: boolean;
 }
 
 export interface StoryStudioContent {
@@ -90,6 +92,7 @@ export interface StoryInputs {
   tone: string;
   ctaStyle: string;
   sourceMaterial?: string;
+  strictMode?: boolean;
 }
 
 export interface StoryboardScene {

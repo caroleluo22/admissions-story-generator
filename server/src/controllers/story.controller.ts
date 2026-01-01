@@ -500,20 +500,52 @@ export const proxyAsset = async (req: Request, res: Response) => {
             return res.status(400).send('URL is required');
         }
 
-        https.get(url, (proxyRes) => {
-            // Keep basic headers
-            const contentType = proxyRes.headers['content-type'];
-            if (contentType) res.setHeader('Content-Type', contentType);
+        // Use fetch (Node 18+) to handle redirects automatically
+        const response = await fetch(url);
 
-            // Critical: Allow CORS for the resulting stream
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Cache-Control', 'public, max-age=3600');
+        if (!response.ok) {
+            console.error(`Proxy fetch failed: ${response.status} ${response.statusText}`);
+            return res.status(response.status).send('Failed to fetch asset');
+        }
 
-            proxyRes.pipe(res);
-        }).on('error', (e) => {
-            console.error('Proxy fetch error:', e);
-            res.status(500).send('Error fetching asset');
+        // Forward Content-Type
+        const contentType = response.headers.get('content-type');
+        if (contentType) res.setHeader('Content-Type', contentType);
+
+        // Critical: Allow CORS
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+
+        // Pipe the web stream to the response
+        // @ts-ignore - ReadableStream/Node stream mismatch typing issue, usually fine or needs utility
+        const reader = response.body?.getReader();
+        if (!reader) return res.status(500).send('No response body');
+
+        // Simple stream piping for Node/Web compatibility
+        const stream = new ReadableStream({
+            start(controller) {
+                return pump();
+                function pump(): any {
+                    return reader?.read().then(({ done, value }) => {
+                        if (done) {
+                            controller.close();
+                            return;
+                        }
+                        controller.enqueue(value);
+                        return pump();
+                    });
+                }
+            }
         });
+
+        // Convert web stream to node stream or just write chunks
+        // Simplest for Node 18 environments without extra deps:
+        // response.body is a ReadableStream. In newer Node, we can use Readable.fromWeb(response.body)
+        const { Readable } = require('stream');
+        // @ts-ignore
+        const nodeStream = Readable.fromWeb(response.body);
+        nodeStream.pipe(res);
+
     } catch (error) {
         console.error('Proxy controller error:', error);
         res.status(500).send('Internal server error');

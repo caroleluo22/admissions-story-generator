@@ -11,13 +11,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, disabled }) => {
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
   const [audience, setAudience] = useState('Beginners');
+  const [storyType, setStoryType] = useState('Educational');
   const [videoUrl, setVideoUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (topic.trim() && description.trim()) {
-      onSubmit({ topic, description, audience });
+      onSubmit({ topic, description, audience, storyType });
     }
   };
 
@@ -143,6 +144,26 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, disabled }) => {
             className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-y"
             required
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="storyType" className="block text-sm font-medium text-slate-300 mb-1">
+              Story Content Type
+            </label>
+            <select
+              id="storyType"
+              value={storyType}
+              onChange={(e) => setStoryType(e.target.value)}
+              disabled={disabled}
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none"
+            >
+              <option value="Educational">Educational (Standard)</option>
+              <option value="Strict Content">Strict Content (No Examples/Filler)</option>
+              <option value="Myth-busting">Myth-busting</option>
+              <option value="Product demo">Product Demo</option>
+            </select>
+          </div>
         </div>
       </div>
 

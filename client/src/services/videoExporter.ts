@@ -34,22 +34,45 @@ export const exportStoryToVideo = async (
   // Helper Loaders
   // Helper to proxy URL
   const getProxyUrl = (url: string) => {
+    // Bypass proxy for CORS-enabled domains to avoid server bottlenecks/errors
+    // Unsplash is trusted to have CORS. Pollinations redirects might fail, so we proxy it.
+    if (url.includes('unsplash.com') || url.includes('images.unsplash.com')) {
+      return url;
+    }
     if (url.startsWith('http')) {
       return `http://localhost:5000/api/proxy?url=${encodeURIComponent(url)}`;
     }
     return url;
   };
 
-  const loadImage = (src: string): Promise<HTMLImageElement | null> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = () => {
-        console.warn(`Failed to load image: ${src}`);
-        resolve(null);
-      };
-      img.src = getProxyUrl(src);
+  const loadImage = async (src: string): Promise<HTMLImageElement | null> => {
+    return new Promise(async (resolve) => {
+      try {
+        // Use proxy for everything to ensure clean CORS headers and avoid canvas taint
+        const proxyUrl = getProxyUrl(src);
+        const response = await fetch(proxyUrl);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+
+        const img = new Image();
+        img.onload = () => {
+          resolve(img);
+          // Note: can't revoke immediately if we draw later, usually revoke after export
+        };
+        img.onerror = () => {
+          console.warn(`Failed to load image: ${src}`);
+          resolve(null);
+        };
+        img.src = objectUrl;
+      } catch (e) {
+        console.warn(`Fetch failed for image: ${src}`, e);
+        // Fallback to direct load just in case
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      }
     });
   };
 
@@ -168,7 +191,14 @@ export const exportStoryToVideo = async (
     if (audioBuffer) {
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(dest);
+
+      // Boost volume
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 2.5; // 250% volume
+
+      source.connect(gainNode);
+      gainNode.connect(dest);
+
       source.start();
     }
 
@@ -204,10 +234,35 @@ export const exportStoryToVideo = async (
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, width, height);
 
+        // Helper for object-fit: cover
+        const drawCover = (media: HTMLImageElement | HTMLVideoElement) => {
+          const mediaAspect = (media instanceof HTMLVideoElement ? media.videoWidth : media.width) /
+            (media instanceof HTMLVideoElement ? media.videoHeight : media.height);
+          const canvasAspect = width / height;
+
+          let drawWidth, drawHeight, offsetX, offsetY;
+
+          if (mediaAspect > canvasAspect) {
+            // Media is wider than canvas (crop sides)
+            drawHeight = height;
+            drawWidth = height * mediaAspect;
+            offsetY = 0;
+            offsetX = (width - drawWidth) / 2;
+          } else {
+            // Media is taller than canvas (crop top/bottom)
+            drawWidth = width;
+            drawHeight = width / mediaAspect;
+            offsetX = 0;
+            offsetY = (height - drawHeight) / 2;
+          }
+
+          ctx.drawImage(media, offsetX, offsetY, drawWidth, drawHeight);
+        };
+
         if (videoEl) {
-          ctx.drawImage(videoEl, 0, 0, width, height);
+          drawCover(videoEl);
         } else if (imgEl) {
-          ctx.drawImage(imgEl, 0, 0, width, height);
+          drawCover(imgEl);
         } else {
           // Missing media placeholder
           ctx.fillStyle = '#222';
@@ -231,9 +286,36 @@ export const exportStoryToVideo = async (
           ctx.fillStyle = '#ffffff';
           ctx.textAlign = 'center';
 
-          // Word wrap would be ideal, but simple centered text for now
-          const text = scene.script.length > 80 ? scene.script.substring(0, 80) + '...' : scene.script;
-          ctx.fillText(text, width / 2, height - 50);
+          // Word wrap logic
+          const maxWidth = width - 100; // Padding
+          const lineHeight = 30;
+          const words = scene.script.split(' ');
+          let line = '';
+          const lines = [];
+
+          for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+              lines.push(line);
+              line = words[n] + ' ';
+            } else {
+              line = testLine;
+            }
+          }
+          lines.push(line);
+
+          // Draw lines from bottom up or top down? 
+          // Let's draw from bottom up to ensure it fits above the bottom margin
+          // Or just draw centered at bottom.
+
+          const startY = height - 50 - (lines.length - 1) * lineHeight;
+
+          lines.forEach((l, i) => {
+            ctx.strokeText(l, width / 2, startY + (i * lineHeight));
+            ctx.fillText(l, width / 2, startY + (i * lineHeight));
+          });
           ctx.restore();
         }
 

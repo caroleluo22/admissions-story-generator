@@ -19,6 +19,7 @@ const StoryProjectSchema: Schema = new Schema({
         topic: { type: String, required: true },
         sourceMaterial: { type: String },
         ctaStyle: { type: String, required: true },
+        strictMode: { type: Boolean, default: false },
     },
     outputs: {
         hooks: [String],

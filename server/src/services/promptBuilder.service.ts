@@ -27,22 +27,36 @@ export const buildStoryPrompt = (inputs: StoryInputs, brand: IBrandGuidelines | 
     Source Material: ${inputs.sourceMaterial || 'None'}
 
     CRITICAL CONTENT GUIDELINES:
+    ${(inputs.strictMode || inputs.storyType === 'Strict Content') ? `
+    1.  **STRICT ADHERENCE TO SOURCE**: You must ONLY use the information provided in the "Source Material". Do not hallucinate examples, do not add external metaphors, and do not expand beyond the provided concepts.
+    2.  **CONCISE & DIRECT**: Focus strictly on the key concepts provided.
+    3.  **NO FLUFF**: Remove conversational filler.
+    ` : `
     1.  **NO GENERIC ADVICE**: Do not say "be yourself", "work hard", or "start early". These are banned phrases.
     2.  **CONCRETE EXAMPLES REQUIRED**: Every main point must be illustrated with a specific, realistic example (e.g., instead of "show leadership", say "like the student who organized a coding boot camp for 50 local seniors").
     3.  **COUNTER-INTUITIVE INSIGHT**: Include at least one insight that contradicts common wisdom (e.g., "Why having a 'well-rounded' profile is actually a trap").
+    `}
     4.  **ACTIONABLE STEPS**: The script must allow the viewer to do something immediately after watching.
 
     Output must be valid JSON matching this structure:
     {
-      "hooks": ["hook1 (specific scenario)", "hook2 (surprising stat)", "hook3 (bold claim)", "hook4", "hook5"],
-      "script": [
-        { "heading": "Hook", "content": "...", "visualCue": "..." },
-        { "heading": "The Common Mistake", "content": "...", "visualCue": "..." },
-        { "heading": "The Insight/Shift", "content": "...", "visualCue": "..." },
-        { "heading": "Concrete Example", "content": "...", "visualCue": "..." },
-        { "heading": "Specific Action Step", "content": "...", "visualCue": "..." },
-        { "heading": "CTA", "content": "...", "visualCue": "..." }
-      ],
+      "hooks": ["hook1", "hook2", "hook3", "hook4", "hook5"],
+      "script": ${(inputs.strictMode || inputs.storyType === 'Strict Content') ? `
+        [
+          { "heading": "First Key Point (from source)", "content": "Detailed explanation...", "visualCue": "..." },
+          { "heading": "Second Key Point (from source)", "content": "Detailed explanation...", "visualCue": "..." },
+          ... (Continue for ALL key sections in the source material)
+        ]
+      ` : `
+        [
+          { "heading": "Hook", "content": "...", "visualCue": "..." },
+          { "heading": "The Common Mistake", "content": "...", "visualCue": "..." },
+          { "heading": "The Insight/Shift", "content": "...", "visualCue": "..." },
+          { "heading": "Concrete Example", "content": "...", "visualCue": "..." },
+          { "heading": "Specific Action Step", "content": "...", "visualCue": "..." },
+          { "heading": "CTA", "content": "...", "visualCue": "..." }
+        ]
+      ` },
       "captions": ["caption1", ...],
       "titles": ["title1", ...],
       "description": "..."
@@ -174,9 +188,16 @@ export const buildStoryboardPrompt = (
     Requirements:
     1. Define 1-2 consistent characters (e.g., an admissions expert, a student). Provide their names, physical descriptions, and a "Character Base Prompt" to keep them consistent in AI image generators.
     2. Break the script into logical scenes.
-    3. For each scene, provide:
+    3. **CRITICAL: VERBATIM SCRIPT ADHERENCE**
+       - You must use the EXACT text from the "content" fields in the provided script.
+       - Do NOT summarize, rewrite, or shorten the script.
+       - If a script section is long, **split it into multiple scenes**.
+       - Every word from the original script must appear in the "scriptLine" fields of your output scenes.
+
+    4. For each scene, provide:
        - A Visual Description: What is happening in the cartoon?
-       - An Image Prompt: A highly detailed prompt for an AI image generator (like Midjourney) to create the background or scene asset. 
+       - An Image Prompt: A highly detailed prompt for an AI image generator (like Midjourney) to create the background or scene asset.
+       - scriptLine: The exact segment of text from the original script corresponding to this scene.
        - Style Note: Stick to a consistent "Admissions Cartoon" style (flat vector, or 3D Pixar style, depending on brand context).
 
     Output MUST be a JSON object with only ONE key: "storyboard".

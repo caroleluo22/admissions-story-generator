@@ -11,6 +11,7 @@ export interface StoryInputs {
     tone: Tone;
     topic: string;
     sourceMaterial?: string;
+    strictMode?: boolean;
     ctaStyle: 'Soft' | 'Direct' | 'None';
 }
 

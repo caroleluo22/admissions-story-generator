@@ -24,7 +24,8 @@ export const StoryStudio: React.FC<StoryStudioProps> = ({ onSendToProduction, in
     storyType: initialStory?.inputs?.storyType as any || 'Myth-busting',
     tone: initialStory?.inputs?.tone as any || 'Friendly',
     topic: initialStory?.inputs?.topic || prefilledInputs?.topic || '',
-    ctaStyle: initialStory?.inputs?.ctaStyle as any || 'Soft'
+    ctaStyle: initialStory?.inputs?.ctaStyle as any || 'Soft',
+    strictMode: initialStory?.inputs?.strictMode || false
   });
 
   const [content, setContent] = useState<StoryStudioContent | null>(
@@ -42,6 +43,7 @@ export const StoryStudio: React.FC<StoryStudioProps> = ({ onSendToProduction, in
         tone: initialStory.inputs.tone as any,
         topic: initialStory.inputs.topic,
         ctaStyle: initialStory.inputs.ctaStyle as any,
+        strictMode: initialStory.inputs.strictMode
       });
       if (initialStory.outputs) {
         setContent(initialStory.outputs as any);
@@ -231,6 +233,7 @@ ${content.descriptionTemplate}
                 <option>Essay mistake</option>
                 <option>Parent reassurance</option>
                 <option>Product demo</option>
+                <option>Strict Content</option>
               </select>
             </div>
 
